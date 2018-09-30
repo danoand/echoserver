@@ -2,17 +2,64 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"log/syslog"
 	"net/http"
+	"os"
 
 	"github.com/danoand/utils"
 	"github.com/gin-gonic/gin"
 )
 
+const appName = "ECHO"
+
 var (
+	err       error
 	whiteList = []string{"207.254.40.140"}
+
+	// Papertrail logger
+	pprlog *syslog.Writer
 )
+
+// appLog logs messages
+func appLog(format string, v ...interface{}) {
+	var cnt, msg string
+
+	// Construct the logging line content
+	cnt = fmt.Sprintf(format, v...)
+	msg = fmt.Sprintf("App: %v - %v", appName, cnt)
+
+	// Log locally
+	log.Printf(msg)
+
+	// Determine the type/level of the log message
+	switch {
+
+	// CASE: Fatal log message
+	case string(cnt[:5]) == "FATAL":
+		pprlog.Emerg(msg)
+
+	// CASE: Error log message
+	case string(cnt[:5]) == "ERROR":
+		pprlog.Err(msg)
+
+	// CASE: Informational log message
+	case string(cnt[:4]) == "INFO":
+		pprlog.Info(msg)
+
+	// CASE: Informational log message
+	case string(cnt[:5]) == "DEBUG":
+		pprlog.Debug(msg)
+
+	// DEFAULT: type/level not identified - log as informational
+	default:
+		pprlog.Debug(msg)
+	}
+
+	return
+}
 
 // responseObject models the data to be sent back to the caller
 type responseObject struct {
@@ -38,9 +85,74 @@ func hlprIsNotIn(tst string, set ...string) (rbool bool) {
 }
 
 func main() {
+	fmt.Printf("INFO: %v - start logging to Papertrail\n", utils.FileLine())
+	// Set up logging to Papertrail
+	pprlog, err = syslog.Dial("udp", "logs.papertrailapp.com:27834", syslog.LOG_EMERG|syslog.LOG_KERN, "bvworkers")
+	if err != nil {
+		// error occurred dialing the remote logging service
+		fmt.Printf("FATAL: %v - error occurred dialing the remote logging service. See: %v\n",
+			utils.FileLine(),
+			err)
+		os.Exit(1)
+	}
+
 	r := gin.Default()
 
-	// Define the handler
+	// Respond to Broadvibe Worker test
+	r.POST("/stubtwilio", func(c *gin.Context) {
+		var (
+			err    error
+			rbytes []byte
+			tMap   = make(map[string]interface{})
+		)
+
+		// Get the request body
+		rbytes, err = c.GetRawData()
+		if err != nil {
+			// error reading the echoserver/stubtwilio request body
+			appLog("ERROR: %v - error reading the echoserver/stubtwilio request body. See: %v",
+				utils.FileLine(),
+				err)
+			c.JSON(
+				http.StatusBadRequest,
+				map[string]string{"msg": "error reading the echoserver/stubtwilio request body"})
+			return
+		}
+
+		// Parse the json request
+		err = utils.FromJSONBytes(rbytes, &tMap)
+		if err != nil {
+			// error parsing the echoserver/stubtwilio request body
+			appLog("ERROR: %v - error parsing the echoserver/stubtwilio request body. See: %v",
+				utils.FileLine(),
+				err)
+			c.JSON(
+				http.StatusInternalServerError,
+				map[string]string{"msg": "error parsing the echoserver/stubtwilio request body"})
+			return
+		}
+
+		// Pretty print the payload
+		rbytes, err = json.MarshalIndent(tMap, "", "  ")
+		if err != nil {
+			// error pretty printing the json body
+			appLog("ERROR: %v - error pretty printing the json body. See: %v",
+				utils.FileLine(),
+				err)
+			c.JSON(
+				http.StatusInternalServerError,
+				map[string]string{"msg": "error pretty printing the json body"})
+			return
+		}
+
+		appLog("INFO: %v - echoing the request body from the caller:\n%v\n",
+			utils.FileLine(),
+			string(rbytes))
+
+		c.JSON(http.StatusOK, map[string]string{"msg": "logged the request body"})
+	})
+
+	// Default handler
 	r.NoRoute(func(c *gin.Context) {
 		var (
 			err    error
