@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"log/syslog"
@@ -103,7 +102,6 @@ func main() {
 		var (
 			err    error
 			rbytes []byte
-			tMap   = make(map[string]interface{})
 		)
 
 		// Get the request body
@@ -116,32 +114,6 @@ func main() {
 			c.JSON(
 				http.StatusBadRequest,
 				map[string]string{"msg": "error reading the echoserver/stubtwilio request body"})
-			return
-		}
-
-		// Parse the json request
-		err = utils.FromJSONBytes(rbytes, &tMap)
-		if err != nil {
-			// error parsing the echoserver/stubtwilio request body
-			appLog("ERROR: %v - error parsing the echoserver/stubtwilio request body. See: %v",
-				utils.FileLine(),
-				err)
-			c.JSON(
-				http.StatusInternalServerError,
-				map[string]string{"msg": "error parsing the echoserver/stubtwilio request body"})
-			return
-		}
-
-		// Pretty print the payload
-		rbytes, err = json.MarshalIndent(tMap, "", "  ")
-		if err != nil {
-			// error pretty printing the json body
-			appLog("ERROR: %v - error pretty printing the json body. See: %v",
-				utils.FileLine(),
-				err)
-			c.JSON(
-				http.StatusInternalServerError,
-				map[string]string{"msg": "error pretty printing the json body"})
 			return
 		}
 
