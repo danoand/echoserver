@@ -117,9 +117,9 @@ func main() {
 			return
 		}
 
-		appLog("INFO: %v - echoing the request body from the caller:\n%v\n",
-			utils.FileLine(),
-			string(rbytes))
+		appLog("INFO: %v - echoing the request body from the caller:\n",
+			utils.FileLine())
+		appLog("INFO: %v\n", string(rbytes))
 
 		c.JSON(http.StatusOK, map[string]string{"msg": "logged the request body"})
 	})
