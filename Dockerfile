@@ -1,13 +1,14 @@
 # Build stage
-FROM golang:latest AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
 # Copy go mod files first for better layer caching
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download dependencies with BuildKit cache mount
+RUN --mount=type=cache,target=/go/pkg/mod,id=go-mod-cache \
+    go mod download
 
 # Copy source code
 COPY . .
@@ -16,7 +17,9 @@ COPY . .
 # -a: force rebuild of packages (ensure static linking)
 # -installsuffix cgo: ensure static binary
 # -ldflags: strip debug symbols to reduce binary size
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN --mount=type=cache,target=/go/pkg/mod,id=go-mod-cache \
+    --mount=type=cache,target=/root/.cache/go-build,id=go-build-cache \
+    CGO_ENABLED=0 GOOS=linux go build \
     -a \
     -installsuffix cgo \
     -ldflags="-w -s" \

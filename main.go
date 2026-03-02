@@ -18,44 +18,19 @@ var (
 	err       error
 	whiteList = []string{"207.254.40.140"}
 
-	// Papertrail logger
+	// generic logger
 	pprlog *syslog.Writer
 )
 
 // appLog logs messages
 func appLog(format string, v ...interface{}) {
-	var cnt, msg string
+	var cnt string
 
 	// Construct the logging line content
 	cnt = fmt.Sprintf(format, v...)
-	msg = fmt.Sprintf("App: %v - %v", appName, cnt)
 
 	// Log locally
-	log.Printf(msg)
-
-	// Determine the type/level of the log message
-	switch {
-
-	// CASE: Fatal log message
-	case string(cnt[:5]) == "FATAL":
-		pprlog.Emerg(msg)
-
-	// CASE: Error log message
-	case string(cnt[:5]) == "ERROR":
-		pprlog.Err(msg)
-
-	// CASE: Informational log message
-	case string(cnt[:4]) == "INFO":
-		pprlog.Info(msg)
-
-	// CASE: Informational log message
-	case string(cnt[:5]) == "DEBUG":
-		pprlog.Debug(msg)
-
-	// DEFAULT: type/level not identified - log as informational
-	default:
-		pprlog.Debug(msg)
-	}
+	log.Printf("%v", cnt)
 }
 
 // responseObject models the data to be sent back to the caller
@@ -82,8 +57,7 @@ func hlprIsNotIn(tst string, set ...string) (rbool bool) {
 }
 
 func main() {
-	fmt.Printf("INFO: %v - start logging to Papertrail\n", utils.FileLine())
-	// Set up logging to Papertrail
+	// Set up a generic logger
 	pprlog, err = syslog.New(syslog.LOG_ERR, "ECHO_")
 	if err != nil {
 		// error occurred dialing the remote logging service

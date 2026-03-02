@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Enable BuildKit for better caching
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: echoserver
     ports:
       - "8999:8999"
@@ -26,20 +29,28 @@ services:
         reservations:
           cpus: '0.5'
           memory: 128M
-    # Logging configuration
+    # Logging configuration with rotation
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+        labels: "service=echoserver"
     # Security options
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
     read_only: true
     tmpfs:
-      - /tmp
-      - /run
+      - /tmp:size=64m
+      - /run:size=32m
 
 networks:
   app-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
