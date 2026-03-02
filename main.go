@@ -56,8 +56,6 @@ func appLog(format string, v ...interface{}) {
 	default:
 		pprlog.Debug(msg)
 	}
-
-	return
 }
 
 // responseObject models the data to be sent back to the caller
@@ -86,7 +84,7 @@ func hlprIsNotIn(tst string, set ...string) (rbool bool) {
 func main() {
 	fmt.Printf("INFO: %v - start logging to Papertrail\n", utils.FileLine())
 	// Set up logging to Papertrail
-	pprlog, err = syslog.Dial("udp", "logs.papertrailapp.com:27834", syslog.LOG_EMERG|syslog.LOG_KERN, "bvworkers")
+	pprlog, err = syslog.New(syslog.LOG_ERR, "ECHO_")
 	if err != nil {
 		// error occurred dialing the remote logging service
 		fmt.Printf("FATAL: %v - error occurred dialing the remote logging service. See: %v\n",
