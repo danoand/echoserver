@@ -6,7 +6,6 @@ import (
 	"log"
 	"log/syslog"
 	"net/http"
-	"os"
 
 	"github.com/danoand/utils"
 	"github.com/gin-gonic/gin"
@@ -57,17 +56,23 @@ func hlprIsNotIn(tst string, set ...string) (rbool bool) {
 }
 
 func main() {
-	// Set up a generic logger
+	// Set up a generic logger (optional for containerized environments)
 	pprlog, err = syslog.New(syslog.LOG_ERR, "ECHO_")
 	if err != nil {
-		// error occurred dialing the remote logging service
-		fmt.Printf("FATAL: %v - error occurred dialing the remote logging service. See: %v\n",
+		// warning: error occurred dialing the remote logging service
+		// in containerized environments, this is expected if syslog is not available
+		fmt.Printf("WARN: %v - error occurred dialing the remote logging service. See: %v\n",
 			utils.FileLine(),
 			err)
-		os.Exit(1)
+		// don't exit; continue with local logging only
 	}
 
 	r := gin.Default()
+
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
+	})
 
 	// Respond to Broadvibe Worker test
 	r.POST("/stubtwilio", func(c *gin.Context) {

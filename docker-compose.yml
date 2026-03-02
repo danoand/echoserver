@@ -1,11 +1,6 @@
 services:
   echoserver:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # Enable BuildKit for better caching
-      args:
-        BUILDKIT_INLINE_CACHE: 1
+    image: echoserver:latest
     container_name: echoserver
     ports:
       - "8999:8999"
