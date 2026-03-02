@@ -1,0 +1,34 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+
+# Testing and build artifacts
+*.test
+*.out
+coverage.txt
+.coverage
+
+# Temporary files
+tmp/
+*.tmp
+*.log
+
+# Documentation (not needed in container)
+README.md
+docs/
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
