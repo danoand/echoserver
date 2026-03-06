@@ -1,6 +1,6 @@
 services:
   echoserver:
-    image: echoserver:latest
+    image: danoand/echoserver:latest
     container_name: echoserver
     ports:
       - "8999:8999"
