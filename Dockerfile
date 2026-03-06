@@ -1,5 +1,7 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -19,7 +21,7 @@ COPY . .
 # -ldflags: strip debug symbols to reduce binary size
 RUN --mount=type=cache,target=/go/pkg/mod,id=go-mod-cache \
     --mount=type=cache,target=/root/.cache/go-build,id=go-build-cache \
-    CGO_ENABLED=0 GOOS=linux go build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -a \
     -installsuffix cgo \
     -ldflags="-w -s" \
